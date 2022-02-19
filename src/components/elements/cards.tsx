@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Image } from "components/base/initial";
 import { EmptyStarIcon, SolanaTokenFillIcon, ThreeDotIcon } from "components/icons";
-import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Connection, PublicKey, clusterApiUrl, InitializeAccountParams } from '@solana/web3.js';
 import { Program, BN, Provider, web3, Wallet, IdlAccounts, IdlTypes } from '@project-serum/anchor';
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { CircleSmBtn } from "./buttons";
@@ -27,12 +27,14 @@ type EscrowAccount = IdlAccounts<Escrow>["escrowAccount"];
 
 interface MainNFTCardListProps {
   category?:number;
+  price?: number;
   name?:string;
   description?:string;
   img?:string;
   nftAccount?: string;
   holderAccount?: string;
   escrowAccount?: string;
+  sellerAccount?: string;
 }
 export const MainNFTCardInitial: React.FC<MainNFTCardListProps> = ({category, name, description, img, holderAccount, nftAccount, escrowAccount}) => {
   
@@ -89,6 +91,7 @@ async function initialize() {
       console.log('account.tokenAccountPubkey: ', account.tokenAccountPubkey.toBase58());
   
       console.log("List Success!");
+      window.location.reload();
     } catch (err) {
       console.log("Transaction error: ", err);
     }
@@ -124,6 +127,7 @@ async function cancel(){
   }
 
   console.log("Cancel Success!");
+  window.location.reload();
 }
 
   return (
@@ -239,8 +243,68 @@ export const MainNFTCard: React.FC = () => {
   );
 };
 
-interface TrendingCardsProps {}
-export const TrendingCard: React.FC<TrendingCardsProps> = () => {
+export const TrendingCard: React.FC<MainNFTCardListProps> = ({name, description, img, holderAccount, escrowAccount, sellerAccount, price}) => {
+  const connection = new Connection(network, "confirmed");  
+  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
+  if (!wallet || !publicKey || !signTransaction || !signAllTransactions) {
+    console.log("Failed");
+  }
+  const signerWallet:NodeWallet = {
+    publicKey: publicKey!,
+    signTransaction: signTransaction!,
+    signAllTransactions: signAllTransactions!,
+    payer: new Keypair
+  };
+
+  const provider = new Provider(connection, signerWallet, {
+    preflightCommitment: "confirmed"
+  });
+
+  //Buy NFT in Marketplace
+  async function buy() {
+    console.log("buy");
+    
+    console.log("holderAccount", holderAccount);
+    console.log("escrowAccount", escrowAccount);
+    console.log("sellerAccount", sellerAccount);
+
+    const holder:string = holderAccount!;
+    const escrow:string = escrowAccount!;
+    const seller:string = sellerAccount!;
+    let TokenAccount = new PublicKey(holder);
+    let EscrowAccount = new PublicKey(escrow);
+    let SellerAccount = new PublicKey(seller);
+
+
+    // Get the PDA that is assigned authority to token account.
+    const [_pda, _nonce] = await PublicKey.findProgramAddress(
+      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow")), EscrowAccount.toBuffer()],
+      programID
+    );
+
+    const pda = _pda;
+
+    console.log('pda_token_account: ', pda.toBase58());
+    const program = new anchor.Program(EscrowIdl, programID, provider);
+    try{
+      await program.rpc.buy({
+        accounts: {
+          buyer: provider.wallet.publicKey,
+          pdaDepositTokenAccount: TokenAccount,
+          initializerMainAccount: SellerAccount,
+          escrowAccount: EscrowAccount,
+          pdaAccount: pda,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId
+        },
+      });
+    }
+    catch(error){
+      console.log(error);
+    }
+
+    console.log("buy success!");
+  }
   return (
     <Box bg={"darkgray"} width={"268px"} border={"1px solid #333333"} borderRadius={"20px"} display={"flex"} flexDirection={"column"}>
       <Box p={"16px"} pb={"12px"} display={"flex"} flexDirection={"column"}>
@@ -248,17 +312,17 @@ export const TrendingCard: React.FC<TrendingCardsProps> = () => {
           <CircleSmBtn position={"absolute"} right={"8px"} top={"8px"} border={"none !important"}>
             <ThreeDotIcon />
           </CircleSmBtn>
-          <Image src={require("assets/image/dashboard/nftcard.png")} width={"236px"} height={"236px"} />
+          <Image src={img} width={"236px"} height={"236px"} />
         </Box>
         <Box mt={"20px"} fontWeight={["600"]} fontSize={["14px"]} lineHeight={["16px"]} letterSpacing={["-0.04em"]} whiteSpace={"nowrap"} overflow={"hidden"} textOverflow={"ellipsis"}>
-          Space Runners
+          {name}
         </Box>
       </Box>
       <Box bg={"#333333"} width={"100%"} height={"1px"} />
       <Box display={"flex"} flexDirection={"row"}>
         <Box flex={1} p={"16px"} display={"flex"} alignItems={"center"}>
           <Box background={"linear-gradient(266.99deg, #AEB1FF -1.09%, #DBAEFF 100%)"} ml={"6px"} fontWeight={"600"} fontSize={"14px"} lineHeight={"16px"} letterSpacing={"-0.04em"} display={"flex"} justifyContent={"center"} alignItems={"center"} backClip={"text"} color={"transparent"}>
-            10000 NFTs
+            {price} SOL
           </Box>
         </Box>
         <Box bg={"#333333"} width={"1px"} />
@@ -266,8 +330,8 @@ export const TrendingCard: React.FC<TrendingCardsProps> = () => {
           <Box fontSize={"24px"}>
             <SolanaTokenFillIcon />
           </Box>
-          <Box ml={"6px"} fontWeight={"600"} fontSize={"14px"} lineHeight={"16px"} letterSpacing={"-0.04em"} display={"flex"} justifyContent={"center"} alignItems={"center"}>
-            Solana
+          <Box onClick={buy} cursor={"pointer"} ml={"6px"} fontWeight={"600"} fontSize={"14px"} lineHeight={"16px"} letterSpacing={"-0.04em"} display={"flex"} justifyContent={"center"} alignItems={"center"}>
+            Buy
           </Box>
         </Box>
       </Box>

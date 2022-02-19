@@ -104,11 +104,10 @@ const DashboardPage: React.FC = () => {
         Owned
       </SegmentLink>
       <SegmentLink 
-        count={12}
         onClick={() => {
           navigate("onsale");
         }}>On Sale</SegmentLink>
-      <SegmentLink count={12}>Created</SegmentLink>
+      <SegmentLink>Created</SegmentLink>
       <SegmentLink>Liked</SegmentLink>
       <SegmentLink>Activity</SegmentLink>
     </>

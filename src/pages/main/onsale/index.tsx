@@ -137,7 +137,6 @@ const DashBoardOnSalePage: React.FC = () => {
   const CategoryLinks = (
     <>
       <SegmentLink
-        count={nftObjData.length}
         onClick={() => {
           navigate("../owned");
         }}
@@ -150,7 +149,7 @@ const DashBoardOnSalePage: React.FC = () => {
         onClick={() => {
           navigate("../onsale");
         }}>On Sale</SegmentLink>
-      <SegmentLink count={nftObjData.length}>Created</SegmentLink>
+      <SegmentLink >Created</SegmentLink>
       <SegmentLink>Liked</SegmentLink>
       <SegmentLink>Activity</SegmentLink>
     </>
