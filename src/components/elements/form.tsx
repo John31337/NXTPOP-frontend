@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, Input } from "components/base/initial";
 import { NarrowIcon } from "components/icons";
+import { NormalBtn } from "components/elements/buttons";
 import styled from "styled-components";
 import { stringify } from "querystring";
 

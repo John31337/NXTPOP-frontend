@@ -1,27 +1,22 @@
-import React, {useState, useEffect, useMemo} from "react";
+import React, {useState, useEffect } from "react";
 import { Box } from "components/base/initial";
-import { IconBtn, SegmentLink } from "components/elements/buttons";
-import { DollarIcon, FourStarIcon, SortListIcon, StarFillIcon } from "components/icons";
+import { CircleBtn, IconBtn, SegmentLink } from "components/elements/buttons";
+import { BellIcon, DollarIcon, EmptyStarIcon, FourStarIcon, SortListIcon, StarFillIcon } from "components/icons";
 import { MainNFTCardInitial } from "components/elements/cards";
 import { useNavigate } from "react-router-dom";
-import { Dropdown } from "components/elements/form";
+import { CustomInput, Dropdown } from "components/elements/form";
 import { useWallet } from "@solana/wallet-adapter-react";
 import * as anchor from '@project-serum/anchor';
-import { MintLayout, TOKEN_PROGRAM_ID, Token } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import axios from "axios";
-import { TokenListProvider, TokenInfo } from '@solana/spl-token-registry';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
-// import { getParsedNftAccountsByOwner, decodeTokenMetadata } from "@nfteyez/sol-rayz";
 
 export interface HomeProps {
   connection: anchor.web3.Connection;
 }
 
 const network = 'https://api.devnet.solana.com';
-const opts = {
-  preflightCommitment: "confirmed"
-}
 const connection = new Connection(network, "confirmed");
 
 interface NFT {
@@ -36,7 +31,7 @@ interface NFT {
 const DashboardPage: React.FC<HomeProps> = (props) => {
   const wallet = useWallet();
   const [nftObjData, setNftObjData] = useState<NFT[]>();
-  const [created, setCreated] = useState(false);
+  const [showInputModal, setShowInputModal] = useState(false);
 
   console.log('wallet', wallet)
   useEffect(() => {
@@ -98,7 +93,7 @@ const DashboardPage: React.FC<HomeProps> = (props) => {
         count={nftObjData?.length}
         selected
         onClick={() => {
-          navigate("owned");
+          navigate("./");
         }}
       >
         Owned
@@ -120,6 +115,7 @@ const DashboardPage: React.FC<HomeProps> = (props) => {
       <IconBtn before={<SortListIcon />}>Sort by</IconBtn>
     </>
   );
+
   return (
     <>
       <Box bg={"darkgray"} width={"100%"} px={"20px"} py={["6px", "6px", "6px", "6px", "0px"]} borderBottom={"1px solid #333333"} display={"flex"} justifyContent={"space-between"}>

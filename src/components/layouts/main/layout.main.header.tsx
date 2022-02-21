@@ -48,7 +48,7 @@ const Header: React.FC = () => {
         >
           {!visibleMenu ? <ThreeDotIcon /> : <>&times;</>}
         </CircleSmBtn>
-        <Box position={["absolute", "absolute", "absolute", "absolute", "static"]} top={"100%"} right={"0px"} bg={"#17171750"} backDrop={"blur(25px)"} height={["auto", "auto", "auto", "auto", "100%"]} p={["10px", "10px", "10px", "10px", "unset"]} borderRadius={"10px"} border={["1px solid #222222", "1px solid #222222", "1px solid #222222", "1px solid #222222", "unset"]} display={visibleMenu ? "flex" : ["none", "none", "none", "none", "flex"]} flexDirection={["column", "column", "column", "column", "row"]} alignItems={["unset", "unset", "unset", "unset", "center"]} gridGap={"12px"} zIndex={5}>
+        <Box position={["absolute", "absolute", "absolute", "absolute", "absolute", "static"]} top={"100%"} right={"0px"} bg={"#17171750"} backDrop={"blur(25px)"} height={["auto", "auto", "auto", "auto", "10%"]} p={["10px", "10px", "10px", "10px", "unset"]} borderRadius={"10px"} border={["1px solid #222222", "1px solid #222222", "1px solid #222222", "1px solid #222222", "unset"]} display={visibleMenu ? "flex" : ["none", "none", "none", "none", "flex"]} flexDirection={["column", "column", "column", "column", "row"]} alignItems={["unset", "unset", "unset", "unset", "center"]} gridGap={"12px"} zIndex={5}>
           <Box order={[2, 2, 2, 2, 1]}>
             <CustomInput
               width={["100%", "100%", "100%", "100%", "250px"]}

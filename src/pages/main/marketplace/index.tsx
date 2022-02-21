@@ -13,13 +13,8 @@ import * as anchorPack from '@project-serum/anchor';
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 const anchor = require("@project-serum/anchor") ;
-
-
 const programID = new PublicKey("Ei6ZoGTRyYMcm4aWLfvdFCUUw76qtPLgJ9QkSpP9hHAe");
 const network = 'https://api.devnet.solana.com';
-const opts = {
-  preflightCommitment: "confirmed"
-}
 
 interface NFT {
   name?: string,
@@ -35,7 +30,7 @@ interface NFT {
 const connection = new Connection(network, "confirmed");  
 
 const MarketPlacePage: React.FC = () => {
-  const [nftObjData, setNftObjData] = useState<NFT[]>([]);
+  const [nftObjData, setNftObjData] = useState<NFT[]>();
   const wallet = useWallet();
 
   const anchorWallet = useMemo(() => {
@@ -69,7 +64,6 @@ const MarketPlacePage: React.FC = () => {
   // Create an scoped async function in the hook
   async function getNFTs() {
     let nfts = await getEscrowAccountList();
-    // console.log("OnMarketNFTs", nfts);
     setNftObjData(nfts);
   }
 
@@ -83,7 +77,6 @@ const MarketPlacePage: React.FC = () => {
       {
         console.log("seller", mint.account.seller.toBase58());
         console.log("wallet", anchorWallet?.publicKey.toBase58());
-
         if(mint.account.seller.toBase58() != anchorWallet?.publicKey.toBase58())
         {
           let meta = await getTokenMetaData(mint.account.mintKey);
@@ -91,12 +84,13 @@ const MarketPlacePage: React.FC = () => {
           if(meta != null)
           {
             let metadata = await axios.get(meta.data.data.uri);
+            console.log("amount", parseFloat(mint.account.amount));
             let escrow = {
               name: metadata.data.name,
               img: metadata.data.image,
               description: metadata.data.description,
               escrow: mint.publicKey,
-              price: parseFloat(mint.amount) / 1000000000,
+              price: parseFloat(mint.account.amount) / 1000000000,
               mint: mint.account.mintKey,
               seller: mint.account.seller,
               tokenAccount: mint.account.tokenAccountPubkey.toBase58(),

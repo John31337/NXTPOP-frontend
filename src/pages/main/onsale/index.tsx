@@ -109,7 +109,7 @@ const DashBoardOnSalePage: React.FC<HomeProps> = (props) => {
               img: metadata.data.image,
               description: metadata.data.description,
               escrow: mint.publicKey,
-              price: parseFloat(mint.amount) / 1000000000,
+              price: parseFloat(mint.account.amount) / 1000000000,
               mint: mint.account.mintKey,
               seller: mint.account.seller,
               tokenAccount: mint.account.tokenAccountPubkey.toBase58(),
@@ -140,7 +140,7 @@ const DashBoardOnSalePage: React.FC<HomeProps> = (props) => {
     <>
       <SegmentLink
         onClick={() => {
-          navigate("../owned");
+          navigate("../");
         }}
       >
         Owned
@@ -195,6 +195,7 @@ const DashBoardOnSalePage: React.FC<HomeProps> = (props) => {
             description={element.description} 
             name={element.name} 
             holderAccount={element.tokenAccount} 
+            price = {element.price}
             nftAccount={element.mint.toBase58()} 
             escrowAccount={element.escrow.toBase58()}/>;
           })
