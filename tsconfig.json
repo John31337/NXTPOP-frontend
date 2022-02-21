@@ -6,11 +6,6 @@
       "dom.iterable",
       "esnext"
     ],
-    "paths": {
-      "crypto": [
-        "./node_modules/crypto-browserify"
-      ],
-    },
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,

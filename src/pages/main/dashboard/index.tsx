@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useMemo} from "react";
 import { Box } from "components/base/initial";
 import { IconBtn, SegmentLink } from "components/elements/buttons";
 import { DollarIcon, FourStarIcon, SortListIcon, StarFillIcon } from "components/icons";
@@ -6,10 +6,17 @@ import { MainNFTCardInitial } from "components/elements/cards";
 import { useNavigate } from "react-router-dom";
 import { Dropdown } from "components/elements/form";
 import { useWallet } from "@solana/wallet-adapter-react";
+import * as anchor from '@project-serum/anchor';
+import { MintLayout, TOKEN_PROGRAM_ID, Token } from '@solana/spl-token';
 import axios from "axios";
-
+import { TokenListProvider, TokenInfo } from '@solana/spl-token-registry';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { getParsedNftAccountsByOwner, decodeTokenMetadata } from "@nfteyez/sol-rayz";
+import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
+// import { getParsedNftAccountsByOwner, decodeTokenMetadata } from "@nfteyez/sol-rayz";
+
+export interface HomeProps {
+  connection: anchor.web3.Connection;
+}
 
 const network = 'https://api.devnet.solana.com';
 const opts = {
@@ -26,76 +33,69 @@ interface NFT {
 }
 
 
-const DashboardPage: React.FC = () => {
+const DashboardPage: React.FC<HomeProps> = (props) => {
   const wallet = useWallet();
-  const walletPubKey = wallet.wallet?.adapter.publicKey!;
-  const [nftObjData, setNftObjData] = useState<NFT[]>([]);
+  const [nftObjData, setNftObjData] = useState<NFT[]>();
   const [created, setCreated] = useState(false);
 
+  console.log('wallet', wallet)
   useEffect(() => {
-    // Create an scoped async function in the hook
-    async function anyNameFunction() {
-      let nfts = await getUserNFTDataList(walletPubKey);
-      let datas:NFT[] = nfts!;
-      setNftObjData(datas);
-      console.log("DashBoardNFTs", datas);
-    }
-    anyNameFunction();
-  }, [created]);
+    if (wallet.connected) getNFTs();
+  }, [wallet]);
 
+  const getNFTs = async () => {
+    const walletPubKey:PublicKey = wallet.publicKey!;
+    const nfts = await getUserNFTs(walletPubKey);
+    console.log('getNFTs: ', nfts);
+    setNftObjData(nfts);
+    console.log('setNft', nftObjData);
+  }
+
+ 
   //Get Collectibles of User Wallet
   const getUserNFTs = async (walletPubKey:PublicKey) => {
-    const pubAddress = walletPubKey?.toBase58()!;
-    const nfts = await getParsedNftAccountsByOwner({
-      publicAddress: pubAddress,
-      connection: connection,
-      sanitize: true,
+    let response = await props.connection.getParsedTokenAccountsByOwner(walletPubKey, {
+      programId: TOKEN_PROGRAM_ID,
     });
-  
+    let mints = await Promise.all(
+      response.value
+        .filter(
+          (accInfo) => accInfo.account.data.parsed.info.tokenAmount.uiAmount !== 0
+        )
+    );
+
+    console.log(mints);
+
+    const nfts:NFT[] = []    
+
+    for (let index = 0; index < mints.length; index++) {
+      const mint = mints[index];
+      const mintKey = new PublicKey(mint.account.data.parsed.info.mint);
+      const largestAccounts = await connection.getTokenLargestAccounts(new PublicKey(mintKey));
+      const nft_holderAccount = largestAccounts.value[0].address.toBase58();
+      let tokenmetaPubkey = Metadata.getPDA(mintKey);
+      const tokenmeta = Metadata.load(props.connection, await tokenmetaPubkey);
+      console.log("tokenmeta", tokenmeta);
+      const value = await axios.get((await tokenmeta).data.data.uri)
+      const nft:NFT = {
+        name: value.data.name,
+        img: value.data.image,
+        description: value.data.description,
+        nftAccount: mintKey.toBase58(),
+        holderAccount: nft_holderAccount
+      };
+      nfts.push(nft);
+      console.log(nfts.length);
+    }
+    console.log(nfts);
     return nfts;
   }
-  //Function to get all nft data
-  const getUserNFTDataList = async (walletPubKey:PublicKey) => {
-    try {
-      let nftData = await getUserNFTs(walletPubKey);
-      let n  = nftData.length;
-      let nfts:NFT[] = [];
-      for (let i = 0; i < n; i++) {
-        let val = await axios.get(nftData[i].data.uri);
-    
-        //Properties of NFT
-        let nft_name = val.data.name;
-        let nft_description = val.data.description;
-        let nft_img = val.data.image;
-        let nft_account = nftData[i].mint;
-    
-        //Find Current Buyer
-        const largestAccounts = await connection.getTokenLargestAccounts(new PublicKey(nft_account));
-    
-        const nft_holderAccount = largestAccounts.value[0].address.toBase58();
-        let nft = {
-          name: nft_name,
-          description: nft_description,
-          img: nft_img,
-          nftAccount: nft_account,
-          holderAccount: nft_holderAccount,
-        };
-    
-        nfts.push(nft);
-      }
-      return nfts;
-
-    } catch (error) {
-      console.log(error);
-    }
-  };  
-
 
   const navigate = useNavigate();
   const CategoryLinks = (
     <>
       <SegmentLink
-        count={nftObjData.length}
+        count={nftObjData?.length}
         selected
         onClick={() => {
           navigate("owned");
@@ -144,9 +144,9 @@ const DashboardPage: React.FC = () => {
       </Box>
       <Box flexGrow={1} p={"20px"} overflow={"auto"} display={"flex"} justifyContent={"center"} alignItems={"flex-start"} flexWrap={"wrap"} gridGap={"20px"}>
         {
-          nftObjData?nftObjData.map(element => {
+          nftObjData && nftObjData.map(element => {
             return <MainNFTCardInitial category={0} img={element.img} description={element.description} name={element.name} holderAccount={element.holderAccount} nftAccount={element.nftAccount} />;
-          }):null
+          })
         }
         {Array(6)
           .fill("0")

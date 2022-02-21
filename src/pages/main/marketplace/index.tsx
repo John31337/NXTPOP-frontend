@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useMemo} from "react";
 import { Box } from "components/base/initial";
 import { IconBtn, SegmentLink } from "components/elements/buttons";
 import { AllTokenFillIcon, CosmosTokenFillIcon, EthTokenFillIcon, SolanaTokenFillIcon, TerraTokenFillIcon } from "components/icons";
@@ -7,17 +7,13 @@ import { TrendingCard } from "components/elements/cards";
 import { Connection, PublicKey } from '@solana/web3.js';
 import { Provider, web3 } from '@project-serum/anchor';
 import { useWallet } from "@solana/wallet-adapter-react";
-import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { EscrowIdl } from "idl";
 import axios from "axios";
+import * as anchorPack from '@project-serum/anchor';
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 
 const anchor = require("@project-serum/anchor") ;
 
-
-const { SystemProgram, Keypair } = web3;
-
-// type EscrowAccount = IdlAccounts<Escrow>["escrowAccount"];
 
 const programID = new PublicKey("Ei6ZoGTRyYMcm4aWLfvdFCUUw76qtPLgJ9QkSpP9hHAe");
 const network = 'https://api.devnet.solana.com';
@@ -36,81 +32,81 @@ interface NFT {
   tokenAccount: any
 }
 
+const connection = new Connection(network, "confirmed");  
+
 const MarketPlacePage: React.FC = () => {
   const [nftObjData, setNftObjData] = useState<NFT[]>([]);
-  const [created, setCreated] = useState(false);
+  const wallet = useWallet();
 
-  const connection = new Connection(network, "confirmed");  
-  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
-  if (!wallet || !publicKey || !signTransaction || !signAllTransactions) {
-    console.log("Failed");
-  }
-  const signerWallet:NodeWallet = {
-    publicKey: publicKey!,
-    signTransaction: signTransaction!,
-    signAllTransactions: signAllTransactions!,
-    payer: new Keypair
-  };
+  const anchorWallet = useMemo(() => {
+    if (
+      !wallet ||
+      !wallet.publicKey ||
+      !wallet.signAllTransactions ||
+      !wallet.signTransaction
+    ) {
+      return;
+    }
 
-  const provider = new Provider(connection, signerWallet, {
+    return {
+      publicKey: wallet.publicKey,
+      signAllTransactions: wallet.signAllTransactions,
+      signTransaction: wallet.signTransaction,
+    } as anchorPack.Wallet;
+  }, [wallet]);
+
+  const provider = new Provider(connection, anchorWallet!, {
     preflightCommitment: "confirmed"
   });
 
   const program = new anchor.Program(EscrowIdl, programID, provider);
 
   useEffect(() => {
-    // Create an scoped async function in the hook
-    async function anyNameFunction() {
-      let nfts = await getUserNFTSALE();
-      let datas:NFT[] = nfts;
-      console.log("OnMarketNFTs", datas);
-      setNftObjData(datas);
-    }
-    anyNameFunction();
-  }, [created]);
+    getNFTs();
+  }, [wallet]);
 
-  async function getEscrowAccountList() {
-    const tokens = await program.account.escrowAccount.all();
-    let escrows:any[] = [];
-    tokens.map((token: any) => {escrows.push(token)});
-    return escrows;
+
+  // Create an scoped async function in the hook
+  async function getNFTs() {
+    let nfts = await getEscrowAccountList();
+    // console.log("OnMarketNFTs", nfts);
+    setNftObjData(nfts);
   }
 
-  async function getUserNFTSALE() {
-    let mints = getEscrowAccountList();
+  async function getEscrowAccountList() {
+    const mints = await program.account.escrowAccount.all();
     let escrows:any[] = [];
-    (await mints).map((item:any) => 
+    for(let i=0; i<mints.length; i++)
     {
-      if(item.account.isInitialized)
+      let mint = mints[i];
+      if(mint.account.isInitialized)
       {
-        if(item.account.seller != publicKey?.toBase58())
-        {
-          let escrow = {
-            name: "",
-            img: "",
-            description: "",
-            escrow: item.publicKey,
-            price: parseFloat(item.amount) / 1000000000,
-            mint: item.account.mintKey,
-            seller: item.account.seller,
-            tokenAccount: item.account.tokenAccountPubkey,
-          };
+        console.log("seller", mint.account.seller.toBase58());
+        console.log("wallet", anchorWallet?.publicKey.toBase58());
 
-          getTokenMetaData(item.account.mintKey).then((metadata) => {
-            if(metadata != null)
-            {
-              axios.get(metadata.data.data.uri).then((value) => {
-                let val = value;
-                escrow.img = val.data.image;
-                escrow.name = val.data.name;
-                escrow.description = val.data.description;
-              });
+        if(mint.account.seller.toBase58() != anchorWallet?.publicKey.toBase58())
+        {
+          let meta = await getTokenMetaData(mint.account.mintKey);
+          console.log("meta", meta);
+          if(meta != null)
+          {
+            let metadata = await axios.get(meta.data.data.uri);
+            let escrow = {
+              name: metadata.data.name,
+              img: metadata.data.image,
+              description: metadata.data.description,
+              escrow: mint.publicKey,
+              price: parseFloat(mint.amount) / 1000000000,
+              mint: mint.account.mintKey,
+              seller: mint.account.seller,
+              tokenAccount: mint.account.tokenAccountPubkey.toBase58(),
             }
-          });
-          escrows.push(escrow);
+
+            escrows.push(escrow);
+          }
         }
       }
-    });
+    }
     return escrows;
   }
 
@@ -123,10 +119,9 @@ const MarketPlacePage: React.FC = () => {
 
           return tokenmeta;
       }
-      catch(error)
-      {
-      }
+      catch(error){}
   }
+
   const CategoryLinks = (
     <>
       <SegmentLink selected>Trending</SegmentLink>
@@ -172,17 +167,17 @@ const MarketPlacePage: React.FC = () => {
       </Box>
       <Box flexGrow={1} p={"20px"} overflow={"auto"} display={"flex"} justifyContent={"center"} alignItems={"flex-start"} flexWrap={"wrap"} gridGap={"20px"}>
         {
-          nftObjData ? nftObjData.concat().map(element => {
+          nftObjData && nftObjData.concat().map(element => {
             return <TrendingCard 
             name={element.name} 
             img={element.img} 
             price={element.price}
             description={element.description} 
-            holderAccount={element.tokenAccount.toBase58()} 
+            holderAccount={element.tokenAccount} 
             nftAccount={element.mint.toBase58()} 
             sellerAccount={element.seller.toBase58()}
             escrowAccount={element.escrow.toBase58()}/>;
-          }):null
+          })
         }
         {Array(6)
           .fill("0")

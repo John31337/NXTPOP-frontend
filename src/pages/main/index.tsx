@@ -1,4 +1,4 @@
-import { useState } from "react";
+import * as anchor from '@project-serum/anchor';
 import { useMemo } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "components/layouts/main/index";
@@ -27,6 +27,11 @@ const MainPages: React.FC = () => {
     [network]
   );
 
+  const rpcHost = "https://api.devnet.solana.com";
+  const connection = new anchor.web3.Connection(rpcHost
+    ? rpcHost
+    : anchor.web3.clusterApiUrl('devnet'));
+
   return (
   <ConnectionProvider endpoint='https://api.devnet.solana.com'>
     <WalletProvider wallets={wallets} autoConnect>
@@ -37,9 +42,9 @@ const MainPages: React.FC = () => {
                 path="dashboard/*"
                 element={
                   <Routes>
-                    <Route path="/" element={<DashboardPage/>} />
+                    <Route path="/" element={<DashboardPage connection={connection}/>} />
                     <Route path="owned" element={<DashboardOwnedPage  />} />
-                    <Route path="onsale" element={<DashBoardOnSalePage />}/>
+                    <Route path="onsale" element={<DashBoardOnSalePage connection={connection}/>}/>
                   </Routes>
                 }
               />

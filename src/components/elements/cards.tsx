@@ -91,7 +91,7 @@ async function initialize() {
       console.log('account.tokenAccountPubkey: ', account.tokenAccountPubkey.toBase58());
   
       console.log("List Success!");
-      window.location.reload();
+      //window.location.reload();
     } catch (err) {
       console.log("Transaction error: ", err);
     }
@@ -127,7 +127,7 @@ async function cancel(){
   }
 
   console.log("Cancel Success!");
-  window.location.reload();
+  //window.location.reload();
 }
 
   return (
