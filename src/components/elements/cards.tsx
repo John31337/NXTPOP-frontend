@@ -10,6 +10,8 @@ import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { EscrowIdl } from "../../idl";
 import * as anchorPack from '@project-serum/anchor';
 import { CustomInput, CustomSelect, SmOption } from "./form";
+import { NormalBtn } from "components/elements/buttons";
+
 
 const anchor = require("@project-serum/anchor") ;
 const { SystemProgram, Keypair } = web3;
@@ -55,12 +57,17 @@ export const MainNFTCardInitial: React.FC<MainNFTCardListProps> = ({category, na
     preflightCommitment: "confirmed"
   });
 
+  const showModal = () => {
+    setShowInputModal(true);
+  }
+
   //Deposit NFT to Marketplace
   async function initialize() { 
     /* call prompt() with custom message to get user input from alert-like dialog */
     // const PriceModal = prompt('Please input price of NFT');
     // const Price:string = PriceModal!;
     // const priceNow = parseInt(Price);
+    setShowInputModal(false);
     if(priceNow > 0)
     {
       let _nft:string = nftAccount!;
@@ -176,10 +183,41 @@ export const MainNFTCardInitial: React.FC<MainNFTCardListProps> = ({category, na
             <SolanaTokenFillIcon />
           </Box>}
         <Box ml={"6px"} fontWeight={"600"} fontSize={"12px"} lineHeight={"16px"} letterSpacing={"-0.04em"} color={"#777777"} display={"flex"} justifyContent={"center"} alignItems={"center"}>
-          {(category == 1) ? price + "SOL" : 
-            <Box order={[2, 2, 2, 2, 1]}>
-              <CustomInput
-                width={["100%", "100%", "100%", "100%", "150px"]}
+          {(category == 1) && price + "SOL"}
+        </Box>
+        <Box ml={"auto"} fontWeight={"600"} fontSize={"12px"} lineHeight={"16px"} letterSpacing={"-0.04em"} color={"lightgray"} display={"flex"} justifyContent={"center"} alignItems={"center"} gridGap={"4px"}>
+          <Box onClick={(category == 0) ? showModal : cancel} bg={"rgba(174, 177, 255, 0.1)"} width={"70px"} alignContent={"center"} textAlign={"center"} p={"8px"} borderRadius={"8px"} fontWeight={["600"]} fontSize={["14px"]} lineHeight={["16px"]} letterSpacing={["-0.04em"]} color={"lightpurple"} cursor={"pointer"}>
+            {(category == 0) ? "List" : "Cancel"}
+          </Box>
+          <Box
+            bg={"darkgray"}
+            height={"250px"}
+            width={"400px"}
+            left={"50%"}
+            top={"50%!important - 200px"}
+            px={"10px"}
+            borderRadius={"6px"}
+            fontWeight={["500"]}
+            fontSize={["14px"]}
+            lineHeight={["16px"]}
+            cursor="pointer"
+            display={"grid"}
+            alignItems={"center"}
+            flexWrap={"nowrap"}
+            whiteSpace={"nowrap"}
+            boxShadow={"0px 4px 8px rgba(0, 0, 0, 0.25)"}
+            gridGap={"4px"}
+            position={"fixed"}
+            visible={showInputModal ? "visible" : "hidden"}
+            onClick={() => {
+              console.log("Clicked")
+            }}
+          >
+          <Box fontWeight={"600"} fontSize={"18px"} lineHeight={"18px"} letterSpacing={"-0.04em"}>
+            Price of NFT
+          </Box>
+          <CustomInput
+                width={["100%", "100%", "100%", "100%"]}
                 value={priceNow}
                 onChange={(value:any) => {setPriceNow(parseFloat(value))}}
                 after={
@@ -194,13 +232,17 @@ export const MainNFTCardInitial: React.FC<MainNFTCardListProps> = ({category, na
                   </CustomSelect>
                 }
                 placeHolder="Price"
-              />
+            />
+            <Box
+              display={"flex"}
+            >
+              <Box width={"50%"} padding={"5px"}>
+                <NormalBtn onClick={initialize}>Sell</NormalBtn>
+              </Box>
+              <Box width={"50%"} padding={"5px"}>
+                <NormalBtn onClick={() => {setShowInputModal(false)}}>Cancel</NormalBtn>
+              </Box>
             </Box>
-          }
-        </Box>
-        <Box ml={"auto"} fontWeight={"600"} fontSize={"12px"} lineHeight={"16px"} letterSpacing={"-0.04em"} color={"lightgray"} display={"flex"} justifyContent={"center"} alignItems={"center"} gridGap={"4px"}>
-          <Box onClick={(category == 0) ? initialize : cancel} bg={"rgba(174, 177, 255, 0.1)"} width={"70px"} alignContent={"center"} textAlign={"center"} p={"8px"} borderRadius={"8px"} fontWeight={["600"]} fontSize={["14px"]} lineHeight={["16px"]} letterSpacing={["-0.04em"]} color={"lightpurple"} cursor={"pointer"}>
-            {(category == 0) ? "List" : "Cancel"}
           </Box>
         </Box>
       </Box>
